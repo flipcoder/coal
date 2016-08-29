@@ -1,0 +1,136 @@
+#ifndef COAL_H_L5UOCN9W
+#define COAL_H_L5UOCN9W
+
+#include "portaudio.h"
+#include <sndfile.h>
+#include <glm/glm.hpp>
+#include <vector>
+#include <map>
+#include <boost/circular_buffer.hpp>
+
+struct Coal
+{
+    Coal();
+    ~Coal();
+
+    Coal(const Coal&) = delete;
+    Coal(Coal&&) = default;
+    Coal& operator=(const Coal&) = delete;
+    Coal& operator=(Coal&&) = default;
+};
+
+namespace coal {
+    
+    void init();
+    void deinit();
+    
+    struct Buffer
+    {
+        Buffer() {}
+        Buffer(std::string fn);
+        ~Buffer() {}
+        
+        Buffer(const Buffer&) = default;
+        Buffer(Buffer&&) = default;
+        Buffer& operator=(const Buffer&) = default;
+        Buffer& operator=(Buffer&&) = default;
+        
+        float gain = 1.0f;
+        std::vector<float> buffer;
+        int channels = 1;
+    };
+    
+    struct Stream
+    {
+        Stream(){}
+        Stream(std::string fn);
+        ~Stream();
+
+        Stream(const Stream&) = default;
+        Stream(Stream&&) = default;
+        Stream& operator=(const Stream&) = default;
+        Stream& operator=(Stream&&) = default;
+
+        std::vector<std::vector<float>> buffers;
+
+        SNDFILE* m_pFile;
+        std::function<void(const void*, void*, void*)> callback;
+    };
+
+    struct Source
+    {
+        struct BufferInfo
+        {
+            BufferInfo(std::shared_ptr<Buffer> buf):
+                buffer(buf)
+            {}
+            BufferInfo(const BufferInfo&) = default;
+            BufferInfo(BufferInfo&&) = default;
+            BufferInfo& operator=(const BufferInfo&) = default;
+            BufferInfo& operator=(BufferInfo&&) = default;
+
+            std::shared_ptr<Buffer> buffer;
+            float t = 0.0f;
+        };
+
+        struct StreamInfo
+        {
+            StreamInfo(std::shared_ptr<Stream> strm):
+                stream(strm)
+            {}
+            StreamInfo(const StreamInfo&) = default;
+            StreamInfo(StreamInfo&&) = default;
+            StreamInfo& operator=(const StreamInfo&) = default;
+            StreamInfo& operator=(StreamInfo&&) = default;
+
+            std::shared_ptr<Stream> stream;
+            float t = 0.0f;
+        };
+
+        bool playing = false;
+        float gain = 1.0f;
+        float pitch = 0.0f;
+        glm::vec3 pos;
+        std::vector<BufferInfo> buffers;
+        std::vector<StreamInfo> streams;
+        boost::circular_buffer<float> history;
+        
+        Source() {}
+        Source(const Source&) = default;
+        Source(Source&&) = default;
+        Source& operator=(const Source&) = default;
+        Source& operator=(Source&&) = default;
+
+        void add(std::shared_ptr<Buffer> buf);
+        void update();
+        void restart();
+        void play();
+        void stop();
+        void pause();
+    };
+
+    struct Listener
+    {
+        glm::mat4 matrix;
+
+        Listener() {}
+        Listener(const Listener&) = default;
+        Listener(Listener&&) = default;
+        Listener& operator=(const Listener&) = default;
+        Listener& operator=(Listener&&) = default;
+    };
+
+    struct Space
+    {
+        std::map<
+            std::shared_ptr<Listener>,
+            std::vector<std::shared_ptr<Source>>
+        > sources;
+
+        void add(std::shared_ptr<Listener> listener, std::shared_ptr<Source> src);
+        void update();
+    };
+}
+
+#endif
+
