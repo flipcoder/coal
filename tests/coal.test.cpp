@@ -17,8 +17,8 @@ TEST_CASE("coal","[coal]") {
         space.add(listener, source);
         source->play();
 
-        //while(source->playing)
-        //    space.update();
+        while(source->playing)
+            space.update();
     }
 }
 

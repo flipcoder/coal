@@ -89,15 +89,41 @@ namespace coal {
 
     void Source :: update(Space* space, vector<float>& buf)
     {
+        auto size = buffers.size() + streams.size();
+        auto done_count = 0;
+        
         for(auto& b: buffers){
             if(!b.enabled)
                 continue;
+            if(b.ended){
+                ++done_count;
+                continue;
+            }
+            float td = (space->frames * 1.0f / space->freq);
+            
+            for(int i=0; i<space->frames; ++i){
+                try{
+                    int ofs = int(b.t*space->freq+0.5);
+                    buf[i] = b.buffer->buffer.at(
+                        i*b.buffer->channels + ofs
+                    );
+                }catch(const std::out_of_range&){
+                    b.ended = true;
+                    ++done_count;
+                    break;
+                }
+            }
+
+            b.t += td;
         }
         
         for(auto& s: streams){
             if(!s.enabled)
                 continue;
         }
+
+        if(done_count == size)
+            playing = false; // all done
     }
     
     void Source :: restart()
@@ -105,16 +131,32 @@ namespace coal {
         playing = true;
         for(auto& b: buffers){
             b.t = 0.0f;
+            b.ended = false;
         }
         for(auto& s: streams){
             s.t = 0.0f;
             s.stream->seek(s.t);
+            s.ended = false;
         }
     }
     
     void Source :: play()
     {
         playing = true;
+        for(auto& b: buffers){
+            if(b.ended)
+            {
+                b.t = 0.0f;
+                b.ended = false;
+            }
+        }
+        for(auto& s: streams){
+            if(s.ended)
+            {
+                s.t = 0.0f;
+                s.ended = false;
+            }
+        }
     }
     
     void Source :: stop()
@@ -122,10 +164,12 @@ namespace coal {
         playing = false;
         for(auto& b: buffers){
             b.t = 0.0f;
+            b.ended = true;
         }
         for(auto& s: streams){
             s.t = 0.0f;
             s.stream->seek(s.t);
+            s.ended = true;
         }
     }
     
@@ -147,6 +191,8 @@ namespace coal {
             &Space::cb_sample,
             this
         );
+        assert(err == paNoError);
+        err = Pa_StartStream(stream);
         assert(err == paNoError);
     }
     
@@ -204,7 +250,7 @@ namespace coal {
         std::vector<float> buf;
         if(!buffers.pop(buf))
             return 0;
-    
+        
         buffers_queued--;
 
         for(int i=0;i<frames;++i){

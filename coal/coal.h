@@ -80,6 +80,7 @@ namespace coal {
             std::shared_ptr<Buffer> buffer;
             float t = 0.0f;
             bool enabled = true;
+            bool ended = false;
             float gain = 1.0f;
             float pitch = 0.0f;
         };
@@ -97,6 +98,7 @@ namespace coal {
             std::shared_ptr<Stream> stream;
             float t = 0.0f;
             bool enabled = true;
+            bool ended = false;
             float gain = 1.0f;
             float pitch = 0.0f;
         };
