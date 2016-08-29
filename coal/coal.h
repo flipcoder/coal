@@ -1,12 +1,14 @@
 #ifndef COAL_H_L5UOCN9W
 #define COAL_H_L5UOCN9W
 
-#include "portaudio.h"
+#include <portaudio.h>
 #include <sndfile.h>
 #include <glm/glm.hpp>
 #include <vector>
 #include <map>
+#include <atomic>
 #include <boost/circular_buffer.hpp>
+#include <boost/lockfree/spsc_queue.hpp>
 
 struct Coal
 {
@@ -20,6 +22,8 @@ struct Coal
 };
 
 namespace coal {
+    
+    struct Space;
     
     void init();
     void deinit();
@@ -37,6 +41,7 @@ namespace coal {
         
         float gain = 1.0f;
         std::vector<float> buffer;
+        int rate = 0;
         int channels = 1;
     };
     
@@ -51,10 +56,13 @@ namespace coal {
         Stream& operator=(const Stream&) = default;
         Stream& operator=(Stream&&) = default;
 
+        void seek(float pos);
+
         std::vector<std::vector<float>> buffers;
 
         SNDFILE* m_pFile;
         std::function<void(const void*, void*, void*)> callback;
+        float t = 0.0f;
     };
 
     struct Source
@@ -71,6 +79,9 @@ namespace coal {
 
             std::shared_ptr<Buffer> buffer;
             float t = 0.0f;
+            bool enabled = true;
+            float gain = 1.0f;
+            float pitch = 0.0f;
         };
 
         struct StreamInfo
@@ -85,11 +96,12 @@ namespace coal {
 
             std::shared_ptr<Stream> stream;
             float t = 0.0f;
+            bool enabled = true;
+            float gain = 1.0f;
+            float pitch = 0.0f;
         };
 
         bool playing = false;
-        float gain = 1.0f;
-        float pitch = 0.0f;
         glm::vec3 pos;
         std::vector<BufferInfo> buffers;
         std::vector<StreamInfo> streams;
@@ -102,7 +114,7 @@ namespace coal {
         Source& operator=(Source&&) = default;
 
         void add(std::shared_ptr<Buffer> buf);
-        void update();
+        void update(Space* s, std::vector<float>& buf);
         void restart();
         void play();
         void stop();
@@ -122,6 +134,13 @@ namespace coal {
 
     struct Space
     {
+        Space();
+        ~Space();
+        Space(const Space&) = default;
+        Space(Space&&) = default;
+        Space& operator=(const Space&) = default;
+        Space& operator=(Space&&) = default;
+        
         std::map<
             std::shared_ptr<Listener>,
             std::vector<std::shared_ptr<Source>>
@@ -129,6 +148,28 @@ namespace coal {
 
         void add(std::shared_ptr<Listener> listener, std::shared_ptr<Source> src);
         void update();
+
+        int freq = 44100;
+        int frames = 512;
+
+    private:
+        
+        static int cb_sample(
+            const void* in, void* out,
+            unsigned long framecount,
+            const PaStreamCallbackTimeInfo* tinfo,
+            PaStreamCallbackFlags flags, void* user
+        );
+        int sample(
+            const void* in, void* out,
+            unsigned long framecount,
+            const PaStreamCallbackTimeInfo* tinfo,
+            PaStreamCallbackFlags flags
+        );
+
+        boost::lockfree::spsc_queue<std::vector<float>> buffers;
+        std::atomic<int> buffers_queued = ATOMIC_VAR_INIT(0);
+        PaStream* stream = nullptr;
     };
 }
 

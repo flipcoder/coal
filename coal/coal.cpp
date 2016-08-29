@@ -2,6 +2,8 @@
 #include "coal.h"
 using namespace std;
 
+#define COAL_PI 3.141592653589793
+
 Coal :: Coal()
 {
     coal::init();
@@ -43,6 +45,7 @@ namespace coal {
         assert(info.frames > 0 && info.channels > 0);
         
         channels = info.channels;
+        rate = info.samplerate;
         buffer.resize(info.frames * info.channels);
 
         int len = 0;
@@ -73,29 +76,87 @@ namespace coal {
         //ov_clear(&m_Stream);
     }
 
+    void Stream :: seek(float pos)
+    {
+        t = pos;
+    }
+
     void Source :: add(std::shared_ptr<Buffer> buf)
     {
         buffers.emplace_back(buf);
+        buffers[buffers.size()-1].enabled = true;
     }
 
-    void Source :: update()
+    void Source :: update(Space* space, vector<float>& buf)
     {
+        for(auto& b: buffers){
+            if(!b.enabled)
+                continue;
+        }
+        
+        for(auto& s: streams){
+            if(!s.enabled)
+                continue;
+        }
     }
     
     void Source :: restart()
     {
+        playing = true;
+        for(auto& b: buffers){
+            b.t = 0.0f;
+        }
+        for(auto& s: streams){
+            s.t = 0.0f;
+            s.stream->seek(s.t);
+        }
     }
     
     void Source :: play()
     {
+        playing = true;
     }
     
     void Source :: stop()
     {
+        playing = false;
+        for(auto& b: buffers){
+            b.t = 0.0f;
+        }
+        for(auto& s: streams){
+            s.t = 0.0f;
+            s.stream->seek(s.t);
+        }
     }
     
     void Source :: pause()
     {
+        playing = false;
+    }
+    
+    Space :: Space():
+        buffers(3)
+    {
+        auto err = Pa_OpenDefaultStream(
+            &stream,
+            0,
+            2,
+            paFloat32,
+            freq,
+            frames,
+            &Space::cb_sample,
+            this
+        );
+        assert(err == paNoError);
+    }
+    
+    Space :: ~Space()
+    {
+        if(stream){
+            Pa_StopStream(stream);
+            Pa_CloseStream(stream);
+            stream = nullptr;
+        }
     }
 
     void Space :: add(
@@ -106,6 +167,54 @@ namespace coal {
     
     void Space :: update()
     {
+        if(buffers_queued < 1)
+        {
+            auto buf = vector<float>(frames);
+            for(auto&& b: buf)
+                b = 0.0f;
+            
+            for(auto&& listener: sources)
+                for(auto&& source: listener.second)
+                    source->update(this, buf);
+            
+            buffers.push(std::move(buf));
+            buffers_queued++;
+        }
+    }
+
+    int Space :: cb_sample(
+        const void* in, void* out,
+        unsigned long framecount,
+        const PaStreamCallbackTimeInfo* tinfo,
+        PaStreamCallbackFlags flags, void* user
+    ){
+        return ((Space*)user)->sample(in,out,framecount,tinfo,flags);
+    }
+    int Space :: sample(
+        const void* in, void* out,
+        unsigned long framecount,
+        const PaStreamCallbackTimeInfo* tinfo,
+        PaStreamCallbackFlags flags
+    ){
+        float* o = (float*)out;
+        
+        for(int i=0;i<frames;++i)
+            o[i] = 0.0f;
+        
+        std::vector<float> buf;
+        if(!buffers.pop(buf))
+            return 0;
+    
+        buffers_queued--;
+
+        for(int i=0;i<frames;++i){
+            auto f = buf[i];
+            f = atan(f)*2.0/COAL_PI;
+            for(int j=0;j<2;++j)
+                o[i*2+j] = f;
+        }
+    
+        return 0;
     }
 }
 
