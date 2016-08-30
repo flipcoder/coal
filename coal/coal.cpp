@@ -175,10 +175,12 @@ namespace coal {
                     if(s.stream->ended && s.stream->buffers.size() == 0){
                         s.ended = true;
                         ++done_count;
+                        new_t_in_buffer = 0.0f;
                         break;
                     }else{
                         s.stream->buffers.pop_front();
                         s.stream->t_in_buffer = 0.0f;
+                        new_t_in_buffer = 0.0f;
                         --i; // redo this index
                     }
                 }
