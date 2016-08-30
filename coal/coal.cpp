@@ -106,7 +106,7 @@ namespace coal {
                 try{
                     int ofs = int(b.t*space->freq+0.5);
                     buf[i] = b.buffer->buffer.at(
-                        i + ofs
+                        (i + ofs) * b.buffer->channels
                     );
                 }catch(const std::out_of_range&){
                     b.ended = true;
