@@ -60,15 +60,20 @@ namespace coal {
         sf_close(sndfile);
     }
 
-    Stream :: Stream(std::string fn)
+    Stream :: Stream(std::string fn):
+        buffers(buffer_capacity)
     {
         SF_INFO info;
         memset(&info, 0, sizeof(info));
-        SNDFILE* sndfile = sf_open(fn.c_str(), SFM_READ, &info);
+        m_pFile = sf_open(fn.c_str(), SFM_READ, &info);
+        assert(!sf_error(m_pFile));
 
-        assert(!sf_error(sndfile));
-
+        channels = info.channels;
+        rate = info.samplerate;
+        sz = info.frames;
         assert(info.frames > 0 && info.channels > 0);
+        
+        update();
     }
 
     Stream :: ~Stream()
@@ -80,6 +85,25 @@ namespace coal {
     void Stream :: seek(float pos)
     {
         t = pos;
+        //len = 0;
+        //len_in_buffer = 0;
+        // TODO: seek in file
+    }
+
+    void Stream :: update()
+    {
+        if(ended)
+            return;
+        
+        while(buffers.size() < buffer_capacity)
+        {
+            std::vector<float> buf;
+            buf.resize(buffer_size);
+            int r = sf_read_float(m_pFile, (float*)&buf[0], buf.size());
+            if(r == 0)
+                ended = true;
+            buffers.push_back(std::move(buf));
+        }
     }
 
     void Source :: add(std::shared_ptr<Buffer> buf)
@@ -131,22 +155,38 @@ namespace coal {
                 ++done_count;
                 continue;
             }
-            //float td = (space->frames * 1.0f / space->freq);
-            
-            //for(int i=0; i<space->frames; ++i){
-            //    try{
-            //        int ofs = int(s.t*space->freq+0.5);
-            //        buf[i] += s.buffer->buffer.at(
-            //            (i + ofs) * s.buffer->channels
-            //        );
-            //    }catch(const std::out_of_range&){
-            //        b.ended = true;
-            //        ++done_count;
-            //        break;
-            //    }
-            //}
 
-            //b.t += td;
+            s.stream->update();
+            
+            float td = (space->frames * 1.0f / space->freq);
+
+            if(s.stream->buffers.size() == 0)
+                continue;
+                
+            float new_t_in_buffer = 0.0f;
+            for(int i=0; i<space->frames; ++i){
+                try{
+                    int ofs = int(s.stream->t_in_buffer * space->freq + 0.5);
+                    buf[i] += s.stream->buffers[0].at(
+                        (i + ofs) * s.stream->channels
+                    );
+                    new_t_in_buffer += 1.0f/space->freq;
+                }catch(const std::out_of_range&){
+                    if(s.stream->ended && s.stream->buffers.size() == 0){
+                        s.ended = true;
+                        ++done_count;
+                        break;
+                    }else{
+                        s.stream->buffers.pop_front();
+                        s.stream->t_in_buffer = 0.0f;
+                        --i; // redo this index
+                    }
+                }
+            }
+
+            s.t += td;
+            s.stream->t += td;
+            s.stream->t_in_buffer += new_t_in_buffer;
         }
 
         if(done_count == size)

@@ -57,12 +57,22 @@ namespace coal {
         Stream& operator=(Stream&&) = default;
 
         void seek(float pos);
+        void update();
 
-        std::vector<std::vector<float>> buffers;
+        boost::circular_buffer<std::vector<float>> buffers;
 
         SNDFILE* m_pFile;
         std::function<void(const void*, void*, void*)> callback;
         float t = 0.0f;
+        float t_in_buffer = 0.0f;
+        int channels = 1;
+        //unsigned len = 0;
+        unsigned len_in_buffer = 0;
+        int sz = 0;
+        int rate = 0;
+        bool ended = false;
+        const int buffer_capacity=2;
+        const int buffer_size = 4096;
     };
 
     struct Source

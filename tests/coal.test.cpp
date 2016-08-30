@@ -38,3 +38,4 @@ TEST_CASE("stream","[stream]") {
             space.update();
     }
 }
+
