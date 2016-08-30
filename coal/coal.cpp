@@ -88,6 +88,12 @@ namespace coal {
         buffers[buffers.size()-1].enabled = true;
     }
 
+    void Source :: add(std::shared_ptr<Stream> strm)
+    {
+        streams.emplace_back(strm);
+        streams[streams.size()-1].enabled = true;
+    }
+
     void Source :: update(Space* space, vector<float>& buf)
     {
         auto size = buffers.size() + streams.size();
@@ -105,7 +111,7 @@ namespace coal {
             for(int i=0; i<space->frames; ++i){
                 try{
                     int ofs = int(b.t*space->freq+0.5);
-                    buf[i] = b.buffer->buffer.at(
+                    buf[i] += b.buffer->buffer.at(
                         (i + ofs) * b.buffer->channels
                     );
                 }catch(const std::out_of_range&){
@@ -121,6 +127,26 @@ namespace coal {
         for(auto& s: streams){
             if(!s.enabled)
                 continue;
+            if(s.ended){
+                ++done_count;
+                continue;
+            }
+            //float td = (space->frames * 1.0f / space->freq);
+            
+            //for(int i=0; i<space->frames; ++i){
+            //    try{
+            //        int ofs = int(s.t*space->freq+0.5);
+            //        buf[i] += s.buffer->buffer.at(
+            //            (i + ofs) * s.buffer->channels
+            //        );
+            //    }catch(const std::out_of_range&){
+            //        b.ended = true;
+            //        ++done_count;
+            //        break;
+            //    }
+            //}
+
+            //b.t += td;
         }
 
         if(done_count == size)

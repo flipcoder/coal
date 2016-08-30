@@ -4,8 +4,8 @@
 #include "coal/coal.h"
 using namespace std;
 
-TEST_CASE("coal","[coal]") {
-    SECTION("basic usage"){
+TEST_CASE("sound","[sound]") {
+    SECTION("play"){
         Coal coal;
         coal::Space space;
         
@@ -22,3 +22,19 @@ TEST_CASE("coal","[coal]") {
     }
 }
 
+TEST_CASE("stream","[stream]") {
+    SECTION("stream"){
+        Coal coal;
+        coal::Space space;
+        
+        auto stream = std::make_shared<coal::Stream>("test.ogg");
+        auto listener = std::make_shared<coal::Listener>();
+        auto source = std::make_shared<coal::Source>();
+        source->add(stream);
+        space.add(listener, source);
+        source->play();
+
+        while(source->playing)
+            space.update();
+    }
+}

@@ -116,6 +116,7 @@ namespace coal {
         Source& operator=(Source&&) = default;
 
         void add(std::shared_ptr<Buffer> buf);
+        void add(std::shared_ptr<Stream> strm);
         void update(Space* s, std::vector<float>& buf);
         void restart();
         void play();
