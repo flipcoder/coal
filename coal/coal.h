@@ -165,6 +165,14 @@ namespace coal {
         int freq = 44100;
         int frames = 512;
 
+        int delay_count = 0;
+        float delay_speed = 0.5;
+        float delay_mix = 0.5;
+
+        int reverb_count = 0;
+        float reverb_speed = 20.0;
+        float reverb_mix = 0.25;
+
     private:
         
         static int cb_sample(
@@ -183,6 +191,7 @@ namespace coal {
         boost::lockfree::spsc_queue<std::vector<float>> buffers;
         std::atomic<int> buffers_queued = ATOMIC_VAR_INIT(0);
         PaStream* stream = nullptr;
+        boost::circular_buffer<std::vector<float>> sample_history;
     };
 }
 

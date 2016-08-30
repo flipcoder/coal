@@ -263,6 +263,8 @@ namespace coal {
         assert(err == paNoError);
         err = Pa_StartStream(stream);
         assert(err == paNoError);
+
+        sample_history = boost::circular_buffer<vector<float>>(172 * 5);
     }
     
     Space :: ~Space()
@@ -291,6 +293,34 @@ namespace coal {
             for(auto&& listener: sources)
                 for(auto&& source: listener.second)
                     source->update(this, buf);
+
+            sample_history.push_front(buf);
+
+            // effect: delay
+            for(int j=1;j<=delay_count;++j){
+                int i=0;
+                for(auto&& b: buf){
+                    try{
+                        b += sample_history.at(
+                            int(freq/frames * j/delay_speed)
+                        ).at(i) * delay_mix/j;
+                    }catch(std::out_of_range&){}
+                    ++i;
+                }
+            }
+
+            // effect: reverb
+            for(int j=1;j<=reverb_count;++j){
+                int i=0;
+                for(auto&& b: buf){
+                    try{
+                        b += sample_history.at(
+                            int(freq/frames * j/reverb_speed)
+                        ).at(i) * reverb_mix/j;
+                    }catch(std::out_of_range&){}
+                    ++i;
+                }
+            }
             
             buffers.push(std::move(buf));
             buffers_queued++;
