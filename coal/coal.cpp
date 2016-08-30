@@ -46,13 +46,14 @@ namespace coal {
         
         channels = info.channels;
         rate = info.samplerate;
+        
         buffer.resize(info.frames * info.channels);
-
+        
         int len = 0;
         int r = 0;
-        while((r = sf_readf_float(sndfile, (float*)&buffer[len], 2048)))
+        while((r = sf_read_float(sndfile, (float*)&buffer[len], buffer.size() - len))){
             len += r;
-        cout << r << endl;
+        }
         
         assert(!sf_error(sndfile));
 
@@ -105,7 +106,7 @@ namespace coal {
                 try{
                     int ofs = int(b.t*space->freq+0.5);
                     buf[i] = b.buffer->buffer.at(
-                        i*b.buffer->channels + ofs
+                        i + ofs
                     );
                 }catch(const std::out_of_range&){
                     b.ended = true;
