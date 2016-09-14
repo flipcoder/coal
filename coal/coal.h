@@ -165,11 +165,13 @@ namespace coal {
         int freq = 44100;
         int frames = 512;
 
-        int delay_count = 0;
+        bool delay = false;
+        int delay_count = 3;
         float delay_speed = 0.5;
         float delay_mix = 0.5;
 
-        int reverb_count = 0;
+        bool reverb = false;
+        int reverb_count = 30;
         float reverb_speed = 20.0;
         float reverb_mix = 0.25;
 

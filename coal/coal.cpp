@@ -60,9 +60,10 @@ namespace coal {
         sf_close(sndfile);
     }
 
-    Stream :: Stream(std::string fn):
-        buffers(buffer_capacity)
+    Stream :: Stream(std::string fn)
+        //buffers(buffer_capacity)
     {
+        buffers.set_capacity(buffer_capacity);
         SF_INFO info;
         memset(&info, 0, sizeof(info));
         m_pFile = sf_open(fn.c_str(), SFM_READ, &info);
@@ -102,7 +103,8 @@ namespace coal {
             int r = sf_read_float(m_pFile, (float*)&buf[0], buf.size());
             if(r == 0)
                 ended = true;
-            buffers.push_back(std::move(buf));
+            buffers.push_back(buf);
+            assert(not buffers.empty());
         }
     }
 
@@ -149,8 +151,9 @@ namespace coal {
         }
         
         for(auto& s: streams){
-            if(!s.enabled)
+            if(!s.enabled){
                 continue;
+            }
             if(s.ended){
                 ++done_count;
                 continue;
@@ -297,30 +300,32 @@ namespace coal {
             sample_history.push_front(buf);
 
             // effect: delay
-            for(int j=1;j<=delay_count;++j){
-                int i=0;
-                for(auto&& b: buf){
-                    try{
-                        b += sample_history.at(
-                            int(freq/frames * j/delay_speed)
-                        ).at(i) * delay_mix/j;
-                    }catch(std::out_of_range&){}
-                    ++i;
+            if(delay)
+                for(int j=1;j<=delay_count;++j){
+                    int i=0;
+                    for(auto&& b: buf){
+                        try{
+                            b += sample_history.at(
+                                int(freq/frames * j/delay_speed)
+                            ).at(i) * delay_mix/j;
+                        }catch(std::out_of_range&){}
+                        ++i;
+                    }
                 }
-            }
 
             // effect: reverb
-            for(int j=1;j<=reverb_count;++j){
-                int i=0;
-                for(auto&& b: buf){
-                    try{
-                        b += sample_history.at(
-                            int(freq/frames * j/reverb_speed)
-                        ).at(i) * reverb_mix/j;
-                    }catch(std::out_of_range&){}
-                    ++i;
+            if(reverb)
+                for(int j=1;j<=reverb_count;++j){
+                    int i=0;
+                    for(auto&& b: buf){
+                        try{
+                            b += sample_history.at(
+                                int(freq/frames * j/reverb_speed)
+                            ).at(i) * reverb_mix/j;
+                        }catch(std::out_of_range&){}
+                        ++i;
+                    }
                 }
-            }
             
             buffers.push(std::move(buf));
             buffers_queued++;

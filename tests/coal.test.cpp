@@ -39,3 +39,9 @@ TEST_CASE("stream","[stream]") {
     }
 }
 
+TEST_CASE("test","[test]") {
+    SECTION("test"){
+        
+    }
+}
+
