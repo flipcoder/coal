@@ -71,7 +71,8 @@ namespace coal {
         int sz = 0;
         int rate = 0;
         bool ended = false;
-        const int buffer_capacity=2;
+        bool loop = false;
+        const int buffer_capacity = 3;
         const int buffer_size = 4096 * 8;
     };
 

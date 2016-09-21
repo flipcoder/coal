@@ -101,10 +101,24 @@ namespace coal {
             std::vector<float> buf;
             buf.resize(buffer_size);
             int r = sf_read_float(m_pFile, (float*)&buf[0], buf.size());
-            if(r == 0)
-                ended = true;
-            buffers.push_back(buf);
-            assert(not buffers.empty());
+            if(r == 0){
+                if(loop)
+                {
+                    sf_seek(m_pFile, 0, SEEK_SET);
+                    len_in_buffer = 0;
+                }
+                else
+                {
+                    len_in_buffer = 0;
+                    ended = true;
+                    break;
+                }
+            }else{
+                len_in_buffer += r;
+                buf.resize(r);
+                buffers.push_back(buf);
+                assert(not buffers.empty());
+            }
         }
     }
 
@@ -170,7 +184,7 @@ namespace coal {
             for(int i=0; i<space->frames; ++i){
                 try{
                     int ofs = int(s.stream->t_in_buffer * space->freq + 0.5);
-                    buf[i] += s.stream->buffers[0].at(
+                    buf[i] += s.stream->buffers.at(0).at(
                         (i + ofs) * s.stream->channels
                     );
                     new_t_in_buffer += 1.0f/space->freq;
@@ -181,7 +195,8 @@ namespace coal {
                         new_t_in_buffer = 0.0f;
                         break;
                     }else{
-                        s.stream->buffers.pop_front();
+                        if(not s.stream->buffers.empty())
+                            s.stream->buffers.pop_front();
                         s.stream->t_in_buffer = 0.0f;
                         new_t_in_buffer = 0.0f;
                         --i; // redo this index
