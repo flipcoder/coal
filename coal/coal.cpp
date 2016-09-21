@@ -147,21 +147,27 @@ namespace coal {
                 continue;
             }
             float td = (space->frames * 1.0f / space->freq);
+            bool restart = false;
+            float bt = b.t;
             
             for(int i=0; i<space->frames; ++i){
                 try{
-                    int ofs = int(b.t*space->freq+0.5);
+                    int ofs = int(bt*space->freq+0.5);
                     buf[i] += b.buffer->buffer.at(
                         (i + ofs) * b.buffer->channels
                     );
+                    b.t += 1.0f/space->freq;
                 }catch(const std::out_of_range&){
-                    b.ended = true;
-                    ++done_count;
+                    if(b.loop){
+                        restart = true;
+                        b.t = 0.0f;
+                    }else{
+                        b.ended = true;
+                        ++done_count;
+                    }
                     break;
                 }
             }
-
-            b.t += td;
         }
         
         for(auto& s: streams){
@@ -263,6 +269,29 @@ namespace coal {
     void Source :: pause()
     {
         playing = false;
+    }
+    
+    int Source :: loop()
+    {
+        int r = 0;
+        for(auto&& b: buffers)
+            r += b.loop;
+        for(auto&& s: streams)
+            r += s.stream->loop;
+        return r;
+    }
+    
+    void Source :: loop(bool v)
+    {
+        for(auto&& b: buffers)
+            b.loop = v;
+        for(auto&& s: streams)
+            s.stream->loop = v;
+    }
+
+    unsigned Source :: size() const
+    {
+        return buffers.size() + streams.size();
     }
     
     Space :: Space():

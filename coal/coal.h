@@ -94,6 +94,7 @@ namespace coal {
             bool ended = false;
             float gain = 1.0f;
             float pitch = 0.0f;
+            bool loop = false;
         };
 
         struct StreamInfo
@@ -133,6 +134,9 @@ namespace coal {
         void play();
         void stop();
         void pause();
+        int loop();
+        void loop(bool b);
+        unsigned size() const;
     };
 
     struct Listener
