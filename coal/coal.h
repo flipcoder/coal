@@ -72,7 +72,7 @@ namespace coal {
         int rate = 0;
         bool ended = false;
         const int buffer_capacity=2;
-        const int buffer_size = 4096;
+        const int buffer_size = 4096 * 8;
     };
 
     struct Source
