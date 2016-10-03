@@ -153,10 +153,11 @@ namespace coal {
             for(int i=0; i<space->frames; ++i){
                 try{
                     int ofs = int(bt*space->freq+0.5);
+                    auto ptch = b.buffer->pitch * b.pitch * pitch;
                     buf[i] += b.buffer->buffer.at(
-                        (i + ofs) * b.buffer->channels
-                    );
-                    b.t += 1.0f/space->freq;
+                        int((i + ofs) * b.buffer->channels * ptch)
+                    ) * b.buffer->gain * b.gain * gain;
+                    b.t += 1.0f/space->freq * ptch;
                 }catch(const std::out_of_range&){
                     if(b.loop){
                         restart = true;
@@ -190,10 +191,11 @@ namespace coal {
             for(int i=0; i<space->frames; ++i){
                 try{
                     int ofs = int(s.stream->t_in_buffer * space->freq + 0.5);
+                    auto ptch = s.stream->pitch * s.pitch * pitch;
                     buf[i] += s.stream->buffers.at(0).at(
-                        (i + ofs) * s.stream->channels
-                    );
-                    new_t_in_buffer += 1.0f/space->freq;
+                        int((i + ofs) * s.stream->channels * ptch)
+                    ) * s.stream->gain * s.gain * gain;
+                    new_t_in_buffer += 1.0f/space->freq * ptch;
                 }catch(const std::out_of_range&){
                     if(s.stream->ended && s.stream->buffers.size() == 0){
                         s.ended = true;
@@ -323,6 +325,13 @@ namespace coal {
         }
     }
 
+    void Space :: add(std::shared_ptr<Listener> listener){
+        listeners.push_back(listener);
+    }
+    void Space :: add(std::shared_ptr<Source> src){
+        for(auto&& listener: listeners)
+            sources[listener].push_back(src);
+    }
     void Space :: add(
         std::shared_ptr<Listener> listener, std::shared_ptr<Source> src
     ){

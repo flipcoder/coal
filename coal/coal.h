@@ -40,6 +40,7 @@ namespace coal {
         Buffer& operator=(Buffer&&) = default;
         
         float gain = 1.0f;
+        float pitch = 1.0f;
         std::vector<float> buffer;
         int rate = 0;
         int channels = 1;
@@ -65,6 +66,8 @@ namespace coal {
         std::function<void(const void*, void*, void*)> callback;
         float t = 0.0f;
         float t_in_buffer = 0.0f;
+        float gain = 1.0f;
+        float pitch = 1.0f;
         int channels = 1;
         //unsigned len = 0;
         unsigned len_in_buffer = 0;
@@ -93,7 +96,7 @@ namespace coal {
             bool enabled = true;
             bool ended = false;
             float gain = 1.0f;
-            float pitch = 0.0f;
+            float pitch = 1.0f;
             bool loop = false;
         };
 
@@ -112,10 +115,12 @@ namespace coal {
             bool enabled = true;
             bool ended = false;
             float gain = 1.0f;
-            float pitch = 0.0f;
+            float pitch = 1.0f;
         };
 
         bool playing = false;
+        float pitch = 1.0f;
+        float gain = 1.0f;
         glm::vec3 pos;
         std::vector<BufferInfo> buffers;
         std::vector<StreamInfo> streams;
@@ -163,7 +168,10 @@ namespace coal {
             std::shared_ptr<Listener>,
             std::vector<std::shared_ptr<Source>>
         > sources;
+        std::vector<std::shared_ptr<Listener>> listeners;
 
+        void add(std::shared_ptr<Listener> listener);
+        void add(std::shared_ptr<Source> src);
         void add(std::shared_ptr<Listener> listener, std::shared_ptr<Source> src);
         void update();
 

@@ -8,10 +8,10 @@ TEST_CASE("sound","[sound]") {
     SECTION("play"){
         Coal coal;
         coal::Space space;
+        //space.delay = true;
         
         auto buffer = std::make_shared<coal::Buffer>("test.wav");
         auto listener = std::make_shared<coal::Listener>();
-        cout << buffer->buffer.size() << endl;
         auto source = std::make_shared<coal::Source>();
         source->add(buffer);
         space.add(listener, source);
@@ -27,12 +27,13 @@ TEST_CASE("stream","[stream]") {
         Coal coal;
         coal::Space space;
         
-        auto stream = std::make_shared<coal::Stream>("test.ogg");
+        auto stream = std::make_shared<coal::Stream>("test2.ogg");
         auto listener = std::make_shared<coal::Listener>();
         auto source = std::make_shared<coal::Source>();
         source->add(stream);
         space.add(listener, source);
         source->play();
+        //stream->loop = true;
 
         while(source->playing)
             space.update();
