@@ -44,6 +44,8 @@ namespace coal {
         std::vector<float> buffer;
         int rate = 0;
         int channels = 1;
+
+        bool good() { return !buffer.empty(); }
     };
     
     struct Stream
@@ -77,6 +79,8 @@ namespace coal {
         bool loop = false;
         const int buffer_capacity = 3;
         const int buffer_size = 4096 * 8;
+        
+        bool good() { return m_pFile; }
     };
 
     struct Source:

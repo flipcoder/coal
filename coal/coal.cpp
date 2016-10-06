@@ -40,24 +40,25 @@ namespace coal {
         memset(&info, 0, sizeof(info));
         SNDFILE* sndfile = sf_open(fn.c_str(), SFM_READ, &info);
 
-        assert(!sf_error(sndfile));
+        if(!sf_error(sndfile))
+        {
+            assert(info.frames > 0 && info.channels > 0);
+            
+            channels = info.channels;
+            rate = info.samplerate;
+            
+            buffer.resize(info.frames * info.channels);
+            
+            int len = 0;
+            int r = 0;
+            while((r = sf_read_float(sndfile, (float*)&buffer[len], buffer.size() - len))){
+                len += r;
+            }
+            
+            assert(!sf_error(sndfile));
 
-        assert(info.frames > 0 && info.channels > 0);
-        
-        channels = info.channels;
-        rate = info.samplerate;
-        
-        buffer.resize(info.frames * info.channels);
-        
-        int len = 0;
-        int r = 0;
-        while((r = sf_read_float(sndfile, (float*)&buffer[len], buffer.size() - len))){
-            len += r;
+            sf_close(sndfile);
         }
-        
-        assert(!sf_error(sndfile));
-
-        sf_close(sndfile);
     }
 
     Stream :: Stream(std::string fn)
@@ -67,14 +68,17 @@ namespace coal {
         SF_INFO info;
         memset(&info, 0, sizeof(info));
         m_pFile = sf_open(fn.c_str(), SFM_READ, &info);
-        assert(!sf_error(m_pFile));
-
-        channels = info.channels;
-        rate = info.samplerate;
-        sz = info.frames;
-        assert(info.frames > 0 && info.channels > 0);
-        
-        update();
+        if(!sf_error(m_pFile))
+        {
+            channels = info.channels;
+            rate = info.samplerate;
+            sz = info.frames;
+            assert(info.frames > 0 && info.channels > 0);
+            
+            update();
+        }
+        else
+            m_pFile = nullptr;
     }
 
     Stream :: ~Stream()
@@ -93,7 +97,7 @@ namespace coal {
 
     void Stream :: update()
     {
-        if(ended)
+        if(ended || !m_pFile)
             return;
         
         while(buffers.size() < buffer_capacity)
@@ -154,6 +158,8 @@ namespace coal {
             float bt = b.t;
 
             auto sp = shared_ptr<Buffer>(b.buffer);
+            if(!sp->good())
+                continue;
             
             for(int i=0; i<space->frames; ++i){
                 try{
@@ -186,6 +192,8 @@ namespace coal {
             }
 
             auto sp = shared_ptr<Stream>(s.stream);
+            if(!sp->good())
+                continue;
             
             sp->update();
             
