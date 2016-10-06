@@ -79,7 +79,8 @@ namespace coal {
         const int buffer_size = 4096 * 8;
     };
 
-    struct Source
+    struct Source:
+        public std::enable_shared_from_this<Source>
     {
         struct BufferInfo
         {
@@ -91,7 +92,7 @@ namespace coal {
             BufferInfo& operator=(const BufferInfo&) = default;
             BufferInfo& operator=(BufferInfo&&) = default;
 
-            std::shared_ptr<Buffer> buffer;
+            std::weak_ptr<Buffer> buffer;
             float t = 0.0f;
             bool enabled = true;
             bool ended = false;
@@ -110,7 +111,7 @@ namespace coal {
             StreamInfo& operator=(const StreamInfo&) = default;
             StreamInfo& operator=(StreamInfo&&) = default;
 
-            std::shared_ptr<Stream> stream;
+            std::weak_ptr<Stream> stream;
             float t = 0.0f;
             bool enabled = true;
             bool ended = false;
@@ -164,15 +165,16 @@ namespace coal {
         Space& operator=(const Space&) = default;
         Space& operator=(Space&&) = default;
         
-        std::map<
-            std::shared_ptr<Listener>,
-            std::vector<std::shared_ptr<Source>>
-        > sources;
-        std::vector<std::shared_ptr<Listener>> listeners;
+        //std::map<
+        //    std::shared_ptr<Listener>,
+        //    std::vector<std::shared_ptr<Source>>
+        //> sources;
+        std::vector<std::weak_ptr<Listener>> listeners;
+        std::vector<std::weak_ptr<Source>> sources;
 
         void add(std::shared_ptr<Listener> listener);
         void add(std::shared_ptr<Source> src);
-        void add(std::shared_ptr<Listener> listener, std::shared_ptr<Source> src);
+        //void add(std::shared_ptr<Listener> listener, std::shared_ptr<Source> src);
         void update();
 
         int freq = 44100;

@@ -149,14 +149,16 @@ namespace coal {
             float td = (space->frames * 1.0f / space->freq);
             bool restart = false;
             float bt = b.t;
+
+            auto sp = shared_ptr<Buffer>(b.buffer);
             
             for(int i=0; i<space->frames; ++i){
                 try{
                     int ofs = int(bt*space->freq+0.5);
-                    auto ptch = b.buffer->pitch * b.pitch * pitch;
-                    buf[i] += b.buffer->buffer.at(
-                        int((i + ofs) * b.buffer->channels * ptch)
-                    ) * b.buffer->gain * b.gain * gain;
+                    auto ptch = sp->pitch * b.pitch * pitch;
+                    buf[i] += sp->buffer.at(
+                        int((i + ofs) * sp->channels * ptch)
+                    ) * sp->gain * b.gain * gain;
                     b.t += 1.0f/space->freq * ptch;
                 }catch(const std::out_of_range&){
                     if(b.loop){
@@ -180,32 +182,34 @@ namespace coal {
                 continue;
             }
 
-            s.stream->update();
+            auto sp = shared_ptr<Stream>(s.stream);
+            
+            sp->update();
             
             float td = (space->frames * 1.0f / space->freq);
 
-            if(s.stream->buffers.size() == 0)
+            if(sp->buffers.size() == 0)
                 continue;
                 
             float new_t_in_buffer = 0.0f;
             for(int i=0; i<space->frames; ++i){
                 try{
-                    int ofs = int(s.stream->t_in_buffer * space->freq + 0.5);
-                    auto ptch = s.stream->pitch * s.pitch * pitch;
-                    buf[i] += s.stream->buffers.at(0).at(
-                        int((i + ofs) * s.stream->channels * ptch)
-                    ) * s.stream->gain * s.gain * gain;
+                    int ofs = int(sp->t_in_buffer * space->freq + 0.5);
+                    auto ptch = sp->pitch * s.pitch * pitch;
+                    buf[i] += sp->buffers.at(0).at(
+                        int((i + ofs) * sp->channels * ptch)
+                    ) * sp->gain * s.gain * gain;
                     new_t_in_buffer += 1.0f/space->freq * ptch;
                 }catch(const std::out_of_range&){
-                    if(s.stream->ended && s.stream->buffers.size() == 0){
+                    if(sp->ended && sp->buffers.size() == 0){
                         s.ended = true;
                         ++done_count;
                         new_t_in_buffer = 0.0f;
                         break;
                     }else{
-                        if(not s.stream->buffers.empty())
-                            s.stream->buffers.pop_front();
-                        s.stream->t_in_buffer = 0.0f;
+                        if(not sp->buffers.empty())
+                            sp->buffers.pop_front();
+                        sp->t_in_buffer = 0.0f;
                         new_t_in_buffer = 0.0f;
                         --i; // redo this index
                     }
@@ -213,8 +217,8 @@ namespace coal {
             }
 
             s.t += td;
-            s.stream->t += td;
-            s.stream->t_in_buffer += new_t_in_buffer;
+            sp->t += td;
+            sp->t_in_buffer += new_t_in_buffer;
         }
 
         if(done_count == size)
@@ -230,7 +234,7 @@ namespace coal {
         }
         for(auto& s: streams){
             s.t = 0.0f;
-            s.stream->seek(s.t);
+            shared_ptr<Stream>(s.stream)->seek(s.t);
             s.ended = false;
         }
     }
@@ -263,7 +267,7 @@ namespace coal {
         }
         for(auto& s: streams){
             s.t = 0.0f;
-            s.stream->seek(s.t);
+            shared_ptr<Stream>(s.stream)->seek(s.t);
             s.ended = true;
         }
     }
@@ -279,7 +283,7 @@ namespace coal {
         for(auto&& b: buffers)
             r += b.loop;
         for(auto&& s: streams)
-            r += s.stream->loop;
+            r += shared_ptr<Stream>(s.stream)->loop;
         return r;
     }
     
@@ -288,7 +292,7 @@ namespace coal {
         for(auto&& b: buffers)
             b.loop = v;
         for(auto&& s: streams)
-            s.stream->loop = v;
+            shared_ptr<Stream>(s.stream)->loop = v;
     }
 
     unsigned Source :: size() const
@@ -329,14 +333,16 @@ namespace coal {
         listeners.push_back(listener);
     }
     void Space :: add(std::shared_ptr<Source> src){
-        for(auto&& listener: listeners)
-            sources[listener].push_back(src);
+        sources.push_back(src);
+        //for(auto&& listener: listeners)
+        //    sources[listener].push_back(src);
     }
-    void Space :: add(
-        std::shared_ptr<Listener> listener, std::shared_ptr<Source> src
-    ){
-        sources[listener].push_back(src);
-    }
+    //void Space :: add(
+    //    std::shared_ptr<Listener> listener, std::shared_ptr<Source> src
+    //){
+    //    //sources[listener].push_back(src);
+    //    sources.push_back(src);
+    //}
     
     void Space :: update()
     {
@@ -346,9 +352,14 @@ namespace coal {
             for(auto&& b: buf)
                 b = 0.0f;
             
-            for(auto&& listener: sources)
-                for(auto&& source: listener.second)
-                    source->update(this, buf);
+            //for(auto&& listener: sources)
+                //for(auto&& source: listener.second)
+            for(auto&& source: sources)
+            {
+                try{
+                    shared_ptr<Source>(source)->update(this, buf);
+                }catch(...){}
+            }
 
             sample_history.push_front(buf);
 
