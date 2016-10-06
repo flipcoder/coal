@@ -15,6 +15,7 @@ TEST_CASE("sound","[sound]") {
         auto source = std::make_shared<coal::Source>();
         source->add(buffer);
         space.add(source);
+
         source->play();
 
         while(source->playing)
@@ -32,6 +33,7 @@ TEST_CASE("stream","[stream]") {
         auto source = std::make_shared<coal::Source>();
         source->add(stream);
         space.add(source);
+
         source->play();
         //stream->loop = true;
 

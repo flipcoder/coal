@@ -136,6 +136,9 @@ namespace coal {
 
     void Source :: update(Space* space, vector<float>& buf)
     {
+        if(!playing)
+            return;
+        
         auto size = buffers.size() + streams.size();
         auto done_count = 0;
         
