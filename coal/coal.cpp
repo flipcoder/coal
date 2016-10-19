@@ -155,6 +155,12 @@ namespace coal {
         streams[streams.size()-1].enabled = true;
     }
 
+    void Source :: clear()
+    {
+        buffers.clear();
+        streams.clear();
+    }
+
     void Source :: update(Space* space, vector<float>& buf)
     {
         if(!playing)
@@ -439,6 +445,7 @@ namespace coal {
         //for(auto&& listener: listeners)
         //    sources[listener].push_back(src);
     }
+
     //void Space :: add(
     //    std::shared_ptr<Listener> listener, std::shared_ptr<Source> src
     //){

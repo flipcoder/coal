@@ -182,6 +182,7 @@ namespace coal {
 
         void add(std::shared_ptr<Listener> listener);
         void add(std::shared_ptr<Source> src);
+        void clear();
         //void add(std::shared_ptr<Listener> listener, std::shared_ptr<Source> src);
         void update();
 
