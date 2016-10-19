@@ -61,6 +61,13 @@ namespace coal {
         }
     }
 
+    Stream :: Stream()
+    {
+        buffers.set_capacity(buffer_capacity);
+        channels = 2;
+        rate = 44100;
+    }
+    
     Stream :: Stream(std::string fn)
         //buffers(buffer_capacity)
     {
@@ -83,7 +90,8 @@ namespace coal {
 
     Stream :: ~Stream()
     {
-        sf_close(m_pFile);
+        if(m_pFile)
+            sf_close(m_pFile);
         //ov_clear(&m_Stream);
     }
 
@@ -97,18 +105,26 @@ namespace coal {
 
     void Stream :: update()
     {
-        if(ended || !m_pFile)
+        if(ended || !(m_pFile || callback))
             return;
         
         while(buffers.size() < buffer_capacity)
         {
             std::vector<float> buf;
             buf.resize(buffer_size);
-            int r = sf_read_float(m_pFile, (float*)&buf[0], buf.size());
+            int r;
+            if(m_pFile){
+                r = sf_read_float(m_pFile, (float*)&buf[0], buf.size());
+            }else{
+                r = callback((float*)&buf[0], buf.size(), user);
+            }
             if(r == 0){
                 if(loop)
                 {
-                    sf_seek(m_pFile, 0, SEEK_SET);
+                    if(m_pFile)
+                        sf_seek(m_pFile, 0, SEEK_SET);
+                    if(reset_callback)
+                        reset_callback(user);
                     len_in_buffer = 0;
                 }
                 else

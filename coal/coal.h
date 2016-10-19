@@ -50,7 +50,7 @@ namespace coal {
     
     struct Stream
     {
-        Stream(){}
+        Stream();
         Stream(std::string fn);
         ~Stream();
 
@@ -65,7 +65,9 @@ namespace coal {
         boost::circular_buffer<std::vector<float>> buffers;
 
         SNDFILE* m_pFile;
-        std::function<void(const void*, void*, void*)> callback;
+        std::function<void(void*, unsigned, void*)> callback;
+        std::function<void(void*)> reset_callback;
+        void* user = nullptr;
         float t = 0.0f;
         float t_in_buffer = 0.0f;
         float gain = 1.0f;
