@@ -65,7 +65,7 @@ namespace coal {
         boost::circular_buffer<std::vector<float>> buffers;
 
         SNDFILE* m_pFile;
-        std::function<void(void*, unsigned, void*)> callback;
+        std::function<int(void*, unsigned, void*)> callback;
         std::function<void(void*)> reset_callback;
         void* user = nullptr;
         float t = 0.0f;
