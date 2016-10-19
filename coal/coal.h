@@ -141,6 +141,7 @@ namespace coal {
 
         void add(std::shared_ptr<Buffer> buf);
         void add(std::shared_ptr<Stream> strm);
+        void clear();
         void update(Space* s, std::vector<float>& buf);
         void restart();
         void play();
@@ -182,7 +183,6 @@ namespace coal {
 
         void add(std::shared_ptr<Listener> listener);
         void add(std::shared_ptr<Source> src);
-        void clear();
         //void add(std::shared_ptr<Listener> listener, std::shared_ptr<Source> src);
         void update();
 
