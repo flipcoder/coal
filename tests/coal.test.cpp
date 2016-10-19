@@ -7,7 +7,7 @@ using namespace std;
 TEST_CASE("sound","[sound]") {
     SECTION("play"){
         Coal coal;
-        coal::Space space;
+        coal::Space space(512);
         //space.delay = true;
         
         auto buffer = std::make_shared<coal::Buffer>("test.wav");

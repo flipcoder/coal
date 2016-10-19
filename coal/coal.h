@@ -165,6 +165,7 @@ namespace coal {
     struct Space
     {
         Space();
+        Space(int frames, std::string device="");
         ~Space();
         Space(const Space&) = default;
         Space(Space&&) = default;

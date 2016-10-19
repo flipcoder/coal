@@ -1,5 +1,6 @@
 #include <iostream>
 #include "coal.h"
+#include <boost/algorithm/string.hpp>
 using namespace std;
 
 #define COAL_PI 3.141592653589793
@@ -340,6 +341,68 @@ namespace coal {
             &Space::cb_sample,
             this
         );
+        assert(err == paNoError);
+        err = Pa_StartStream(stream);
+        assert(err == paNoError);
+
+        sample_history = boost::circular_buffer<vector<float>>(172 * 5);
+    }
+
+    Space :: Space(int frames, std::string device):
+        buffers(3)
+    {
+        this->frames = frames;
+        
+        int dev;
+        if(not device.empty()){
+            dev = -1;
+            int num_dev = Pa_GetDeviceCount();
+            for(int i=0; i<num_dev; ++i)
+            {
+                // check for exact match
+                if(boost::to_lower_copy(string(Pa_GetDeviceInfo(i)->name)) == 
+                    device
+                ){
+                    dev = i;
+                    break; // exact match, ignore remaining partials
+                }
+
+                // check for partial match
+                if(boost::to_lower_copy(string(Pa_GetDeviceInfo(i)->name)).find(
+                    device
+                ) != string::npos){
+                    dev = i;
+                }
+            }
+            if(dev == -1)
+            {
+                throw std::out_of_range("audio device not found");
+            }
+        }
+        else
+        {
+            dev = Pa_GetDefaultOutputDevice();
+        }
+
+        PaStreamParameters outparams;
+        memset(&outparams, 0, sizeof(outparams));
+        outparams.channelCount = 2;
+        outparams.device = dev;
+        outparams.hostApiSpecificStreamInfo = NULL;
+        outparams.sampleFormat = paFloat32;
+        outparams.suggestedLatency = Pa_GetDeviceInfo(dev)->defaultLowOutputLatency;
+        outparams.hostApiSpecificStreamInfo = NULL;
+        auto err = Pa_OpenStream(
+            &stream,
+            NULL,
+            &outparams,
+            freq,
+            frames,
+            paNoFlag,
+            &Space::cb_sample,
+            this
+        );
+        
         assert(err == paNoError);
         err = Pa_StartStream(stream);
         assert(err == paNoError);
