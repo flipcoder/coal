@@ -299,6 +299,18 @@ namespace coal {
             s.ended = true;
         }
     }
+    void Source:: seek(float t)
+    {
+        for(auto& b: buffers){
+            b.t = t;
+            b.ended = false;
+        }
+        for(auto& s: streams){
+            s.t = t;
+            shared_ptr<Stream>(s.stream)->seek(t);
+            s.ended = false;
+        }
+    }
     
     void Source :: pause()
     {

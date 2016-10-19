@@ -146,6 +146,7 @@ namespace coal {
         void play();
         void stop();
         void pause();
+        void seek(float t);
         int loop();
         void loop(bool b);
         unsigned size() const;
