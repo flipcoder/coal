@@ -48,13 +48,17 @@ namespace coal {
             channels = info.channels;
             rate = info.samplerate;
             
-            buffer.resize(info.frames * info.channels);
+            std::vector<float> buf;
+            buf.resize(info.frames * info.channels);
             
             int len = 0;
             int r = 0;
-            while((r = sf_read_float(sndfile, (float*)&buffer[len], buffer.size() - len))){
+            while((r = sf_read_float(sndfile, (float*)&buf[len], buf.size() - len))){
                 len += r;
             }
+
+            buffer.resize(channels);
+            buffer = extract(buf, channels);
             
             assert(!sf_error(sndfile));
 
@@ -176,7 +180,7 @@ namespace coal {
                 ++done_count;
                 continue;
             }
-            float td = (space->frames * 1.0f / space->freq);
+            float td = space->frames * 1.0f / space->freq;
             bool restart = false;
             float bt = b.t;
 
@@ -184,14 +188,17 @@ namespace coal {
             if(!sp->good())
                 continue;
             
-            for(int i=0; i<space->frames; ++i){
+            for(int i=0; i<space->frames; i+=space->channels){
                 try{
-                    int ofs = int(bt*space->freq+0.5);
+                    int ofs = int(bt*space->freq);
                     auto ptch = sp->pitch * b.pitch * pitch;
-                    buf[i] += sp->buffer.at(
-                        int((i + ofs) * sp->channels * ptch)
-                    ) * sp->gain * b.gain * gain;
-                    b.t += 1.0f/space->freq * ptch;
+                    int idx = int(ofs * sp->channels + i) * ptch;
+                    float g = sp->gain * b.gain * gain;
+                    for(int j=0; j<space->channels; ++j)
+                        buf[i + j] += sp->buffer[j % sp->channels].at(
+                            idx + (j % sp->channels)
+                        ) * g;
+                    b.t += 1.0f/space->freq;
                 }catch(const std::out_of_range&){
                     if(b.loop){
                         restart = true;
@@ -352,7 +359,7 @@ namespace coal {
         auto err = Pa_OpenDefaultStream(
             &stream,
             0,
-            2,
+            channels,
             paFloat32,
             freq,
             frames,
@@ -404,7 +411,7 @@ namespace coal {
 
         PaStreamParameters outparams;
         memset(&outparams, 0, sizeof(outparams));
-        outparams.channelCount = 2;
+        outparams.channelCount = channels;
         outparams.device = dev;
         outparams.hostApiSpecificStreamInfo = NULL;
         outparams.sampleFormat = paFloat32;
@@ -513,6 +520,7 @@ namespace coal {
     ){
         return ((Space*)user)->sample(in,out,framecount,tinfo,flags);
     }
+    
     int Space :: sample(
         const void* in, void* out,
         unsigned long framecount,
@@ -539,5 +547,20 @@ namespace coal {
     
         return 0;
     }
+
+    std::vector<std::vector<float>> extract(const std::vector<float>& buf, int channels)
+    {
+        std::vector<std::vector<float>> r;
+        r.resize(channels);
+        for(int i=0; i<channels; ++i)
+        {
+            unsigned sz = buf.size() / channels;
+            r[i].resize(sz);
+            for(unsigned j=0; j<sz; ++j)
+                r[i][j] = buf[i + j*channels];
+        }
+        return r;
+    }
+    
 }
 

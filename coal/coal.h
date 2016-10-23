@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <atomic>
+#include <string>
 #include <boost/circular_buffer.hpp>
 #include <boost/lockfree/spsc_queue.hpp>
 
@@ -41,7 +42,7 @@ namespace coal {
         
         float gain = 1.0f;
         float pitch = 1.0f;
-        std::vector<float> buffer;
+        std::vector<std::vector<float>> buffer;
         int rate = 0;
         int channels = 1;
 
@@ -187,6 +188,7 @@ namespace coal {
         void update();
 
         int freq = 44100;
+        int channels = 2;
         int frames = 512;
 
         bool delay = false;
@@ -219,6 +221,8 @@ namespace coal {
         PaStream* stream = nullptr;
         boost::circular_buffer<std::vector<float>> sample_history;
     };
+
+    std::vector<std::vector<float>> extract(const std::vector<float>& buf, int channels);
 }
 
 #endif
