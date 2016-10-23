@@ -240,7 +240,7 @@ namespace coal {
                     buf[i] += sp->buffers.at(0).at(
                         int((i + ofs) * sp->channels * ptch)
                     ) * sp->gain * s.gain * gain;
-                    new_t_in_buffer += 1.0f/space->freq * ptch;
+                    new_t_in_buffer += 1.0f/space->freq;
                 }catch(const std::out_of_range&){
                     if(sp->ended && sp->buffers.size() == 0){
                         s.ended = true;
