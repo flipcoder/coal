@@ -4,4 +4,7 @@ inline bool uncaught_exception() noexcept(true) {return current_exception() != n
 }
 
 #define CATCH_CONFIG_MAIN
+#ifndef DEBUG
+    #include <backward/backward.cpp>
+#endif
 #include <catch.hpp>

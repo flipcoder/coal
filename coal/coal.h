@@ -8,8 +8,10 @@
 #include <map>
 #include <atomic>
 #include <string>
+#include <functional>
 #include <boost/circular_buffer.hpp>
 #include <boost/lockfree/spsc_queue.hpp>
+#include <ciso646>
 
 struct Coal
 {

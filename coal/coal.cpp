@@ -53,9 +53,12 @@ namespace coal {
             
             int len = 0;
             int r = 0;
-            while((r = sf_read_float(sndfile, (float*)&buf[len], buf.size() - len))){
-                len += r;
+            try {
+                while ((r = sf_read_float(sndfile, (float*)&buf.at(len), buf.size() - len))) {
+                    len += r;
+                }
             }
+            catch (std::out_of_range&) {}
 
             buffer.resize(channels);
             buffer = extract(buf, channels);

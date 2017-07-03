@@ -1,14 +1,14 @@
-solution("coal")
+workspace("coal")
     targetdir("bin")
     
     configurations {"Debug", "Release"}
 
-        defines { }
+        defines { "DO_NOT_USE_WMAIN", "NOMINMAX" }
         
         -- Debug Config
         configuration "Debug"
             defines { "DEBUG" }
-            flags { "Symbols" }
+            symbols "On"
             linkoptions { }
 
             configuration "gmake"
@@ -57,14 +57,18 @@ solution("coal")
             linkoptions { "-stdlib=libc++" }
 
         configuration "windows"
+            toolset "v141"
+            flags { "MultiProcessorCompile" }
+
             links {
                 "portaudio_x86",
-                "sndfile",
+                "libsndfile-1",
             }
 
             includedirs {
-                "c:/local/boost_1_61_0",
+                "c:/local/boost_1_64_0",
                 "c:/msvc/include",
+                "C:/Program Files (x86)/Mega-Nerd/libsndfile/include",
             }
             configuration { "windows", "Debug" }
                 libdirs {
@@ -73,22 +77,21 @@ solution("coal")
             configuration { "windows" }
             libdirs {
                 "c:/msvc/lib32",
-                "c:/local/boost_1_61_0/lib32-msvc-14.0",
+                "c:/local/boost_1_64_0/lib32-msvc-14.1",
+                "C:/Program Files (x86)/Mega-Nerd/libsndfile/lib"
             }
             -- buildoptions {
                 -- "/MP",
                 -- "/Gm-",
             -- }
             
-            configuration { "windows", "Debug" }
-                links {
-                    "libboost_filesystem-vc140-mt-gd-1_61"
-                }
-            configuration {}
-            configuration { "windows", "Release" }
-                links {
-                    "libboost_filesystem-vc140-mt-1_61"
-                }
+            --configuration { "windows", "Debug" }
+            --    links {
+            --    }
+            --configuration {}
+            --configuration { "windows", "Release" }
+            --    links {
+                --}
 
     project "test"
         kind "WindowedApp"
